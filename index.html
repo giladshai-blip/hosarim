@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ניהול חוסרים נטו - גלעד</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">WMS מול הזמנות פתוחות</p>
+        <h1>ניהול חוסרים נטו</h1>
+        <p class="subtitle">מעלה שני דוחות Excel או CSV, רואה חוסר נטו, ומעדכן משלוחים שיצאו מהמפעל.</p>
+      </div>
+      <div id="statusBadge" class="status-badge waiting">
+        <span class="status-dot"></span>
+        ממתין להעלאת קבצים
+      </div>
+    </header>
+
+    <main>
+      <section id="dropBoth" class="drop-zone bulk-upload" aria-label="העלאת שני הקבצים ביחד">
+        <button class="drop-card bulk-card" type="button" aria-describedby="bothHelp">
+          <span class="drop-icon both" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M8 7H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2" />
+              <path d="M12 3h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+              <path d="M8 13h4M8 17h4M14 7h2M14 11h2" />
+            </svg>
+          </span>
+          <span class="drop-title">העלאת שני הקבצים יחד</span>
+          <span id="bothHelp" class="drop-help">גרור לכאן את קובץ המלאי וקובץ ההזמנות יחד, או לחץ לבחירת שני קבצים</span>
+          <span id="nameBoth" class="file-name" hidden></span>
+        </button>
+        <input id="inputBoth" class="file-input" type="file" multiple accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+      </section>
+
+      <section class="upload-grid" aria-label="העלאת קבצים">
+        <article id="dropInventory" class="drop-zone" data-type="inventory">
+          <button class="drop-card" type="button" aria-describedby="inventoryHelp">
+            <span class="drop-icon inventory" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 7c0 2.2 3.6 4 8 4s8-1.8 8-4-3.6-4-8-4-8 1.8-8 4Z" />
+                <path d="M4 7v10c0 2.2 3.6 4 8 4s8-1.8 8-4V7" />
+                <path d="M4 12c0 2.2 3.6 4 8 4s8-1.8 8-4" />
+              </svg>
+            </span>
+            <span class="drop-title">מלאי במחסן WMS</span>
+            <span id="inventoryHelp" class="drop-help">גרור קובץ Excel או CSV לכאן או לחץ לבחירה</span>
+            <span id="nameInventory" class="file-name" hidden></span>
+          </button>
+          <input id="inputInventory" class="file-input" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+        </article>
+
+        <article id="dropOrders" class="drop-zone" data-type="orders">
+          <button class="drop-card" type="button" aria-describedby="ordersHelp">
+            <span class="drop-icon orders" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2Z" />
+                <path d="M9 12h.01M13 12h3M9 16h.01M13 16h3" />
+              </svg>
+            </span>
+            <span class="drop-title">דוח הזמנות לקוחות</span>
+            <span id="ordersHelp" class="drop-help">גרור קובץ Excel או CSV לכאן או לחץ לבחירה</span>
+            <span id="nameOrders" class="file-name" hidden></span>
+          </button>
+          <input id="inputOrders" class="file-input" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+        </article>
+      </section>
+
+      <section id="fileStatus" class="file-status" hidden>
+        <div class="file-pill inventory">
+          <span>מלאי</span>
+          <strong id="inventoryFileLabel">לא נטען</strong>
+        </div>
+        <div class="file-pill orders">
+          <span>הזמנות</span>
+          <strong id="ordersFileLabel">לא נטען</strong>
+        </div>
+        <div class="file-pill updated">
+          <span>עודכן לאחרונה</span>
+          <strong id="lastUpdatedLabel">לא עודכן</strong>
+        </div>
+        <button id="swapReportsBtn" class="secondary-button" type="button">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M8 7h12m0 0-4-4m4 4-4 4" />
+            <path d="M16 17H4m0 0 4 4m-4-4 4-4" />
+          </svg>
+          החלף בין הקבצים
+        </button>
+      </section>
+
+      <div id="messageArea" class="message-area" hidden></div>
+
+      <section id="emptyState" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9 17v-2m3 2v-4m3 4v-6" />
+            <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6L19 9.4V19a2 2 0 0 1-2 2Z" />
+            <path d="M13 3v5a2 2 0 0 0 2 2h4" />
+          </svg>
+        </div>
+        <h2>המערכת ממתינה לנתונים</h2>
+        <p>כדי להתחיל בניתוח החוסרים, העלה את דוחות האקסל או קובצי CSV למעלה.</p>
+      </section>
+
+      <section id="appBody" class="workspace" hidden>
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <label class="search-box">
+              <span aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+                </svg>
+              </span>
+              <input id="searchInput" type="search" placeholder="חפש מק&quot;ט או שם מוצר">
+            </label>
+
+            <label class="filter-box">
+              <span>תצוגה</span>
+              <select id="filterMode">
+                <option value="shortages" selected>חוסרים וסיכון</option>
+                <option value="shipped">רק נשלחו</option>
+                <option value="all">הכל</option>
+              </select>
+            </label>
+
+            <button id="exportBtn" class="secondary-button" type="button">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+                <path d="M5 21h14" />
+              </svg>
+              יצוא CSV
+            </button>
+
+            <button id="archiveBtn" class="secondary-button" type="button">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 5h16v4H4z" />
+                <path d="M6 9v10h12V9" />
+                <path d="M10 13h4" />
+              </svg>
+              פריטים בארכיון
+              <span id="archiveCount" class="button-count">0</span>
+            </button>
+
+            <button id="resetFilesBtn" class="secondary-button" type="button">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M6 7l1 14h10l1-14" />
+                <path d="M9 7V4h6v3" />
+              </svg>
+              איפוס קבצים
+            </button>
+
+            <button id="resetManualBtn" class="danger-button" type="button">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 4v6h6" />
+                <path d="M20 20v-6h-6" />
+                <path d="M20 9A8 8 0 0 0 6.3 5.3L4 10" />
+                <path d="M4 15a8 8 0 0 0 13.7 3.7L20 14" />
+              </svg>
+              איפוס משלוחים
+            </button>
+          </div>
+
+          <div class="kpi-grid" aria-label="סיכום">
+            <div class="kpi shortage">
+              <span>סה"כ חסר</span>
+              <strong id="shortageCount">0</strong>
+            </div>
+            <div class="kpi shipped">
+              <span>נשלח מהמפעל</span>
+              <strong id="shippedCount">0</strong>
+            </div>
+            <div class="kpi rows">
+              <span>שורות מוצגות</span>
+              <strong id="visibleCount">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <section id="hiddenPanel" class="hidden-panel" hidden>
+          <div>
+            <strong>פריטים בארכיון</strong>
+            <span id="hiddenCount">0</span>
+          </div>
+          <div id="hiddenList" class="hidden-list"></div>
+        </section>
+
+        <div class="table-card">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sticky-col sku-col">מק"ט</th>
+                  <th class="sticky-col name-col">תיאור מוצר</th>
+                  <th>WMS<br><span>מלאי במחסן</span></th>
+                  <th>ימי מלאי<br><span>מדוח המלאי</span></th>
+                  <th>הזמנות<br><span>צבר פתוח</span></th>
+                  <th>נשלח היום<br><span>דיווח ידני</span></th>
+                  <th class="net-heading">חוסר נטו<br><span>יתרה סופית</span></th>
+                  <th>סטטוס</th>
+                  <th>ניהול</th>
+                </tr>
+              </thead>
+              <tbody id="shortageTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="shipmentDialog" class="modal">
+    <form method="dialog" class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M8 7h12m0 0-4-4m4 4-4 4" />
+            <path d="M16 17H4m0 0 4 4m-4-4 4-4" />
+          </svg>
+        </span>
+        <div>
+          <h2>עדכון משלוח</h2>
+          <p id="modalDesc"></p>
+        </div>
+      </div>
+
+      <label class="quantity-field">
+        <span>כמות שיצאה מהמפעל</span>
+        <input id="modalInput" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+      </label>
+
+      <div class="modal-actions">
+        <button id="modalSave" class="primary-button" value="save" type="button">עדכן מלאי</button>
+        <button id="modalClose" class="secondary-button" value="cancel" type="button">ביטול</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
