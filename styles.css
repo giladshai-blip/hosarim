@@ -343,6 +343,18 @@ h1 {
   margin-top: 20px;
 }
 
+.search-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
 .toolbar {
   display: flex;
   align-items: start;
@@ -366,7 +378,7 @@ h1 {
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--surface-soft);
   box-shadow: none;
 }
 
@@ -382,6 +394,32 @@ h1 {
   background: transparent;
   color: var(--text);
   font-weight: 800;
+}
+
+.search-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.clear-search-button,
+.clear-filters-button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.clear-search-button:disabled,
+.clear-filters-button:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  opacity: 0.5;
 }
 
 .filter-box {
@@ -403,6 +441,43 @@ h1 {
   background: transparent;
   color: var(--text);
   font-weight: 900;
+}
+
+.advanced-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.number-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.number-filter input {
+  width: 72px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 8px;
+  outline: 0;
+  background: var(--surface-soft);
+  color: var(--text);
+  text-align: center;
+  font-weight: 900;
+}
+
+.number-filter input:focus {
+  box-shadow: 0 0 0 3px rgba(31, 95, 191, 0.12);
 }
 
 .primary-button,
@@ -758,6 +833,7 @@ tbody tr:hover .net-cell {
 }
 
 .balance-badge,
+.expected-badge,
 .manual-badge {
   display: inline-flex;
   justify-content: center;
@@ -780,6 +856,16 @@ tbody tr:hover .net-cell {
 .manual-badge {
   background: var(--green-soft);
   color: var(--green);
+}
+
+.expected-badge.current {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.expected-badge.updated {
+  background: var(--blue-soft);
+  color: var(--blue);
 }
 
 .manual-input {
@@ -982,6 +1068,14 @@ tbody tr:hover .net-cell {
     flex-direction: column;
   }
 
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .search-meta {
+    white-space: normal;
+  }
+
   .upload-grid {
     grid-template-columns: 1fr;
   }
@@ -1011,8 +1105,16 @@ tbody tr:hover .net-cell {
   }
 
   .toolbar-actions,
-  .search-box {
+  .advanced-filters,
+  .number-filter,
+  .search-box,
+  .clear-search-button,
+  .clear-filters-button {
     width: 100%;
+  }
+
+  .number-filter input {
+    flex: 1;
   }
 
   .secondary-button,
