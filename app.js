@@ -13,6 +13,14 @@ const state = {
   ignoredSkus: loadJson(STORAGE_KEYS.ignored, []),
   currentSearch: "",
   filterMode: "shortages",
+  numericFilters: {
+    ordersMin: "",
+    ordersMax: "",
+    daysMin: "",
+    daysMax: "",
+    inventoryMin: "",
+    netMax: "",
+  },
   archiveOpen: false,
   activeSku: null,
   recentlyUpdatedSku: null,
@@ -48,7 +56,16 @@ const elements = {
   emptyState: document.getElementById("emptyState"),
   appBody: document.getElementById("appBody"),
   searchInput: document.getElementById("searchInput"),
+  searchMeta: document.getElementById("searchMeta"),
+  clearSearchBtn: document.getElementById("clearSearchBtn"),
   filterMode: document.getElementById("filterMode"),
+  ordersMinFilter: document.getElementById("ordersMinFilter"),
+  ordersMaxFilter: document.getElementById("ordersMaxFilter"),
+  daysMinFilter: document.getElementById("daysMinFilter"),
+  daysMaxFilter: document.getElementById("daysMaxFilter"),
+  inventoryMinFilter: document.getElementById("inventoryMinFilter"),
+  netMaxFilter: document.getElementById("netMaxFilter"),
+  clearFiltersBtn: document.getElementById("clearFiltersBtn"),
   resetFilesBtn: document.getElementById("resetFilesBtn"),
   resetManualBtn: document.getElementById("resetManualBtn"),
   exportBtn: document.getElementById("exportBtn"),
@@ -80,8 +97,22 @@ elements.searchInput.addEventListener("input", (event) => {
   processAndRender();
 });
 
+elements.clearSearchBtn.addEventListener("click", () => {
+  elements.searchInput.value = "";
+  state.currentSearch = "";
+  elements.searchInput.focus();
+  processAndRender();
+});
+
 elements.filterMode.addEventListener("change", (event) => {
   state.filterMode = event.target.value;
+  processAndRender();
+});
+
+setupNumericFilters();
+
+elements.clearFiltersBtn.addEventListener("click", () => {
+  clearNumericFilters();
   processAndRender();
 });
 
@@ -126,6 +157,24 @@ elements.modalInput.addEventListener("keydown", (event) => {
   saveShipment();
   elements.dialog.close("save");
 });
+
+function setupNumericFilters() {
+  const filterInputs = [
+    [elements.ordersMinFilter, "ordersMin"],
+    [elements.ordersMaxFilter, "ordersMax"],
+    [elements.daysMinFilter, "daysMin"],
+    [elements.daysMaxFilter, "daysMax"],
+    [elements.inventoryMinFilter, "inventoryMin"],
+    [elements.netMaxFilter, "netMax"],
+  ];
+
+  filterInputs.forEach(([input, key]) => {
+    input.addEventListener("input", (event) => {
+      state.numericFilters[key] = event.target.value;
+      processAndRender();
+    });
+  });
+}
 
 function setupDropZone(zone, input, type) {
   const button = zone.querySelector(".drop-card");
@@ -387,6 +436,10 @@ function resetFiles() {
   elements.inputOrders.value = "";
   elements.inputBoth.value = "";
   elements.tableBody.replaceChildren();
+  elements.searchInput.value = "";
+  state.currentSearch = "";
+  clearNumericFilters();
+  updateSearchMeta(0);
   elements.shortageCount.textContent = "0";
   elements.shippedCount.textContent = "0";
   elements.visibleCount.textContent = "0";
@@ -436,7 +489,8 @@ function processAndRender() {
       const inventory = inventoryBySku[sku] || { qty: 0, days: null, name: "לא מופיע במלאי (רק בהזמנות)" };
       const orders = ordersBySku[sku] || 0;
       const manual = Number(state.manualShipments[sku] || 0);
-      const balance = inventory.qty + manual - orders;
+      const expectedInventory = inventory.qty + manual;
+      const balance = expectedInventory - orders;
 
       return {
         sku,
@@ -445,6 +499,7 @@ function processAndRender() {
         inventoryDays: inventory.days,
         orders,
         manual,
+        expectedInventory,
         balance,
         status: getItemStatus(balance, manual, inventory.days),
       };
@@ -469,6 +524,8 @@ function processAndRender() {
     items = items.filter((item) => item.manual > 0);
   }
 
+  items = applyNumericFilters(items);
+
   items.sort((a, b) => {
     if (a.balance !== b.balance) return a.balance - b.balance;
     return a.name.localeCompare(b.name, "he");
@@ -477,6 +534,7 @@ function processAndRender() {
   state.preparedItems = items;
   renderRows(items);
   updateKpis(items);
+  updateSearchMeta(items.length);
   renderHiddenItems();
 }
 
@@ -559,6 +617,7 @@ function createTableRow(item) {
     createInventoryDaysCell(item.inventoryDays),
     createCell(formatNumber(item.orders), "number-cell"),
     createManualCell(item),
+    createExpectedInventoryCell(item),
     createBalanceCell(item.balance),
     createStatusCell(item.status),
     createActionsCell(item)
@@ -641,6 +700,18 @@ function createManualCell(item) {
 
   cell.append(input);
 
+  return cell;
+}
+
+function createExpectedInventoryCell(item) {
+  const cell = document.createElement("td");
+  cell.className = "number-cell";
+
+  const badge = document.createElement("span");
+  badge.className = `expected-badge ${item.manual > 0 ? "updated" : "current"}`;
+  badge.textContent = formatNumber(item.expectedInventory);
+  badge.title = `מלאי WMS ${formatNumber(item.inventory)} + נשלח היום ${formatNumber(item.manual)}`;
+  cell.append(badge);
   return cell;
 }
 
@@ -745,6 +816,67 @@ function clearHiddenSkus() {
   showMessage("כל הפריטים המוסתרים הוחזרו.");
 }
 
+function applyNumericFilters(items) {
+  return items.filter((item) => {
+    return isInRange(item.orders, state.numericFilters.ordersMin, state.numericFilters.ordersMax) &&
+      isInRange(item.inventoryDays, state.numericFilters.daysMin, state.numericFilters.daysMax) &&
+      isInRange(item.inventory, state.numericFilters.inventoryMin, "") &&
+      isInRange(item.balance, "", state.numericFilters.netMax);
+  });
+}
+
+function isInRange(value, minValue, maxValue, allowMissing = false) {
+  if (!hasNumberFilter(minValue) && !hasNumberFilter(maxValue)) return true;
+  if (!Number.isFinite(value)) return allowMissing;
+
+  const min = hasNumberFilter(minValue) ? Number(minValue) : -Infinity;
+  const max = hasNumberFilter(maxValue) ? Number(maxValue) : Infinity;
+
+  return value >= min && value <= max;
+}
+
+function hasNumberFilter(value) {
+  return value !== "" && Number.isFinite(Number(value));
+}
+
+function clearNumericFilters() {
+  Object.keys(state.numericFilters).forEach((key) => {
+    state.numericFilters[key] = "";
+  });
+
+  elements.ordersMinFilter.value = "";
+  elements.ordersMaxFilter.value = "";
+  elements.daysMinFilter.value = "";
+  elements.daysMaxFilter.value = "";
+  elements.inventoryMinFilter.value = "";
+  elements.netMaxFilter.value = "";
+  elements.clearFiltersBtn.disabled = true;
+}
+
+function hasActiveNumericFilters() {
+  return Object.values(state.numericFilters).some(hasNumberFilter);
+}
+
+function updateSearchMeta(visibleCount) {
+  const hasSearch = state.currentSearch.length > 0;
+  const hasFilters = hasActiveNumericFilters();
+  elements.clearSearchBtn.disabled = !hasSearch;
+  elements.clearFiltersBtn.disabled = !hasFilters;
+
+  if (!hasSearch && !hasFilters) {
+    elements.searchMeta.textContent = "הקלד כדי לסנן את הטבלה";
+    return;
+  }
+
+  if (hasSearch) {
+    const filterSuffix = hasFilters ? " ולפי הסינונים" : "";
+    elements.searchMeta.textContent = `נמצאו ${formatNumber(visibleCount)} פריטים עבור "${elements.searchInput.value.trim()}"${filterSuffix}`;
+    return;
+  }
+
+  elements.searchMeta.textContent = `נמצאו ${formatNumber(visibleCount)} פריטים לפי הסינונים`;
+}
+
 function updateKpis(items) {
   const totalMissingUnits = items.reduce((sum, item) => {
     return item.balance < 0 ? sum + Math.abs(item.balance) : sum;
@@ -796,7 +928,7 @@ function exportVisibleRows() {
     return;
   }
 
-  const headers = ["מק\"ט", "תיאור מוצר", "מלאי WMS", "ימי מלאי", "הזמנות", "נשלח היום", "חוסר נטו", "סטטוס"];
+  const headers = ["מק\"ט", "תיאור מוצר", "מלאי WMS", "ימי מלאי", "הזמנות", "נשלח היום", "מלאי צפוי לאחר משלוח", "חוסר נטו", "סטטוס"];
   const lines = [
     headers,
     ...state.preparedItems.map((item) => [
@@ -806,6 +938,7 @@ function exportVisibleRows() {
       Number.isFinite(item.inventoryDays) ? item.inventoryDays : "",
       item.orders,
       item.manual,
+      item.expectedInventory,
       item.balance,
       item.status.label,
     ]),

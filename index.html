@@ -108,17 +108,21 @@
       </section>
 
       <section id="appBody" class="workspace" hidden>
+        <div class="search-row" role="search" aria-label="חיפוש בטבלת החוסרים">
+          <label class="search-box">
+            <span aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+              </svg>
+            </span>
+            <input id="searchInput" type="search" placeholder="חפש לפי מק&quot;ט או שם מוצר" autocomplete="off">
+          </label>
+          <span id="searchMeta" class="search-meta">הקלד כדי לסנן את הטבלה</span>
+          <button id="clearSearchBtn" class="clear-search-button" type="button" disabled>נקה חיפוש</button>
+        </div>
+
         <div class="toolbar">
           <div class="toolbar-actions">
-            <label class="search-box">
-              <span aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
-                </svg>
-              </span>
-              <input id="searchInput" type="search" placeholder="חפש מק&quot;ט או שם מוצר">
-            </label>
-
             <label class="filter-box">
               <span>תצוגה</span>
               <select id="filterMode">
@@ -127,6 +131,34 @@
                 <option value="all">הכל</option>
               </select>
             </label>
+
+            <div class="advanced-filters" aria-label="סינונים מספריים">
+              <label class="number-filter">
+                <span>הזמנות מ-</span>
+                <input id="ordersMinFilter" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+              </label>
+              <label class="number-filter">
+                <span>עד</span>
+                <input id="ordersMaxFilter" type="number" min="0" step="1" inputmode="numeric" placeholder="∞">
+              </label>
+              <label class="number-filter">
+                <span>ימי מלאי מ-</span>
+                <input id="daysMinFilter" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+              </label>
+              <label class="number-filter">
+                <span>עד</span>
+                <input id="daysMaxFilter" type="number" min="0" step="1" inputmode="numeric" placeholder="∞">
+              </label>
+              <label class="number-filter">
+                <span>WMS מ-</span>
+                <input id="inventoryMinFilter" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+              </label>
+              <label class="number-filter">
+                <span>חוסר נטו עד</span>
+                <input id="netMaxFilter" type="number" step="1" inputmode="numeric" placeholder="0">
+              </label>
+              <button id="clearFiltersBtn" class="clear-filters-button" type="button" disabled>נקה סינונים</button>
+            </div>
 
             <button id="exportBtn" class="secondary-button" type="button">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -202,6 +234,7 @@
                   <th>ימי מלאי<br><span>מדוח המלאי</span></th>
                   <th>הזמנות<br><span>צבר פתוח</span></th>
                   <th>נשלח היום<br><span>דיווח ידני</span></th>
+                  <th>מלאי צפוי<br><span>לאחר משלוח</span></th>
                   <th class="net-heading">חוסר נטו<br><span>יתרה סופית</span></th>
                   <th>סטטוס</th>
                   <th>ניהול</th>
